@@ -1,0 +1,65 @@
+#сгенерируем несколько точек данных на основе уравнения: y = 2x^(2)+8
+import numpy as np
+import matplotlib.pyplot as plt
+import neurolab as nl
+
+#создаем точку данных на основе вышеупомянутого уравнения
+min_val = -30 #минимальное значение графика по x
+max_val = 30 #максимальное значение графика по x
+num_points = 160 #кол-во элементов для графика
+x = np.linspace(min_val, max_val, num_points) #linspace генерирует num_points точек, равномерно распределенных в интервале от min_val до max_val.
+y = 2 * np.square(x) + 8 #уравнение np.square() квадрат некого числа 
+y /= np.linalg.norm(y) #np.linalg.norm() используется для вычисления нормы вектора или матрицы
+
+#изменяем этот набор данных
+data = x.reshape(num_points, 1) #reshape() изменяет форму массива без изменения его данных
+labels = y.reshape(num_points, 1) #reshape() изменяет форму массива без изменения его данных
+
+#визуализируем x1)
+plt.figure()
+plt.scatter(data, labels)
+plt.xlabel('Dimension 1')
+plt.ylabel('Dimension 2')
+plt.title('Data-points')
+
+"""
+создаем нейронную сеть, имеющую два скрытых слоя с нейролабом
+с десятью нейронами в первом скрытом слое, шесть во втором скрытом
+слое и один в выходном слое
+"""
+neural_net = nl.net.newff([[min_val, max_val]], [10, 6, 1]) #[min_val, max_val] - диапазоны входных сигналов
+
+#используем алгоритм обучения градиентному спуску
+neural_net.trainf = nl.train.train_gd
+
+#обучаем сеть 
+error = neural_net.train(data, labels, epochs = 1000, show = 100, goal = 0.01)
+"""
+data, labels - обучающие множества
+epochs - число циклов обучения
+show - период вывода информации о состоянии процесса
+goal - цель обучения, значение функционала ошибки при котором 
+обучение будет завершено преждевременно
+"""
+
+#испытание сети на учебных точках данных
+output = neural_net.sim(data)
+y_pred = output.reshape(num_points)
+
+#визуализация x2))
+plt.figure()
+plt.plot(error)
+plt.xlabel('Number of epochs')
+plt.ylabel('Error')
+plt.title('Training error progress')
+
+#отображение фактического результата в сравнении с прогнозируемым
+x_dense = np.linspace(min_val, max_val, num_points * 2)
+y_dense_pred = neural_net.sim(x_dense.reshape(x_dense.size, 1)).reshape(x_dense.size)
+
+#визуализация x3)))
+plt.figure()
+plt.plot(x_dense, y_dense_pred, '-', x, y, '.', x, y_pred, 'p')
+plt.title('Actual vs predicted')
+
+plt.show()
